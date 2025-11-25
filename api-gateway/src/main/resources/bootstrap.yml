@@ -1,0 +1,21 @@
+spring:
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:consul}
+      port: ${CONSUL_PORT:8500}
+      config:
+        enabled: ${CONSUL_CONFIG_ENABLED:true}
+        format: ${CONSUL_CONFIG_FORMAT:yaml}
+        prefix: ${CONSUL_CONFIG_PREFIX:config}
+        default-context: ${CONSUL_CONFIG_DEFAULT_CONTEXT:application}
+        profile-separator: ${CONSUL_CONFIG_PROFILE_SEPARATOR:/}
+      discovery:
+        enabled: ${CONSUL_DISCOVERY_ENABLED:true}
+        register: ${CONSUL_REGISTER_ENABLED:true}
+        instance-id: ${APP_NAME:api-gateway}-${random.value}
+        service-name: ${APP_NAME:api-gateway}
+        hostname: ${CONSUL_HOSTNAME:localhost}
+        port: ${SERVER_PORT:8080}
+        prefer-ip-address: ${CONSUL_PREFER_IP:true}
+        health-check-path: ${CONSUL_HEALTH_CHECK_PATH:/actuator/health}
+        health-check-interval: ${CONSUL_HEALTH_CHECK_INTERVAL:10s}

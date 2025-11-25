@@ -1,0 +1,123 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: ${APP_NAME:api-gateway}
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: ${GATEWAY_DISCOVERY_ENABLED:true}
+      routes:
+        - id: core-service
+          uri: ${CORE_SERVICE_URI:lb://core-service}
+          predicates:
+            - Path=/api/**/core/**
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            key-resolver: "#{@userKeyResolver}"
+            redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH_RATE:10}
+            redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST_CAPACITY:20}
+            redis-rate-limiter.requestedTokens: ${RATE_LIMIT_REQUESTED_TOKENS:1}
+    consul:
+      host: ${CONSUL_HOST:consul}
+      port: ${CONSUL_PORT:8500}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI:http://core-service/api/auth/issuer}
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: ${REDIS_TIMEOUT:2000ms}
+    connect-timeout: ${REDIS_CONNECT_TIMEOUT:2000ms}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST:/}
+
+consul:
+  host: ${CONSUL_HOST:consul}
+  port: ${CONSUL_PORT:8500}
+  discovery:
+    service-name: ${APP_NAME:api-gateway}
+    prefer-ip-address: ${CONSUL_PREFER_IP:true}
+    health-check-path: ${CONSUL_HEALTH_CHECK_PATH:/actuator/health}
+    health-check-interval: ${CONSUL_HEALTH_CHECK_INTERVAL:10s}
+    instance-id: ${APP_NAME:api-gateway}-${random.value}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info,gateway,refresh,prometheus}
+  endpoint:
+    health:
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:always}
+  metrics:
+    export:
+      prometheus:
+        enabled: ${PROMETHEUS_METRICS_ENABLED:true}
+
+jwt:
+  secret: ${JWT_SECRET:your-super-secret-jwt-key-change-this-in-production}
+  expiration: ${JWT_EXPIRATION:3600000} # 1 hour in milliseconds
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:2592000000} # 30 days in milliseconds
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    org.springframework.cloud.gateway: ${GATEWAY_LOG_LEVEL:INFO}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:INFO}
+    ru.uni.ecop.gateway: ${APP_LOG_LEVEL:INFO}
+  pattern:
+    console: "${LOG_PATTERN:%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n}"
+
+# Custom configuration for the API Gateway
+gateway:
+  auth:
+    enabled: ${GATEWAY_AUTH_ENABLED:true}
+  rate-limiting:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+    allowed-methods: ${CORS_ALLOWED_METHODS:*}
+    allowed-headers: ${CORS_ALLOWED_HEADERS:*}
+
+# Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      core-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+        automatic-transition-from-open-to-half-open-enabled: true
+  timelimiter:
+    instances:
+      core-service:
+        timeout-duration: 5s
+
+# Sleuth and Zipkin Configuration for distributed tracing
+spring.sleuth:
+  sampler:
+    probability: 1.0  # Sample 100% of requests
+  web:
+    skip-pattern: /actuator/health|/actuator/info
+  propagation:
+    type: B3
+    local:
+      service-name: ${APP_NAME:api-gateway}
+
+spring.zipkin:
+  sender:
+    type: web
+  base-url: ${ZIPKIN_URL:http://zipkin:9411/}
+  enabled: ${ZIPKIN_ENABLED:true}
