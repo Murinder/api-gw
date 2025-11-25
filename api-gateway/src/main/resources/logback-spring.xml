@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <springProfile name="default,dev">
+        <root level="${LOG_LEVEL:-INFO}">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="prod">
+        <include resource="org/springframework/boot/logging/logback/file-appender.xml"/>
+        <root level="${LOG_LEVEL:-INFO}">
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <logger name="org.springframework.cloud.gateway" level="${GATEWAY_LOG_LEVEL:-INFO}"/>
+    <logger name="org.springframework.security" level="${SECURITY_LOG_LEVEL:-INFO}"/>
+    <logger name="ru.uni.ecop.gateway" level="${APP_LOG_LEVEL:-INFO}"/>
+</configuration>
